@@ -1,0 +1,448 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculadora Profesional — Métodos Numéricos</title>
+<style>
+/* Reset & base */
+:root{
+  --bg:#0f1724; --card:#0b1220; --muted:#9aa6b2; --accent:#60a5fa; --glass: rgba(255,255,255,0.04);
+  --glass-2: rgba(255,255,255,0.03); --success:#34d399; --danger:#fb7185;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+body{background:linear-gradient(180deg,#071023 0%, #081426 60%); color:#e6eef8; -webkit-font-smoothing:antialiased; padding:28px;}
+.container{max-width:1100px;margin:0 auto;}
+.header{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:grid;place-items:center;box-shadow:0 6px 24px rgba(59,130,246,0.18)}
+.logo svg{width:34px;height:34px;fill:white;opacity:0.95}
+.title{line-height:1}
+.title h1{font-size:1.15rem;margin:0}
+.title p{margin:0;font-size:.86rem;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center}
+.card{background:linear-gradient(180deg,var(--card), rgba(11,18,28,0.7));border:1px solid rgba(255,255,255,0.03);padding:16px;border-radius:12px;box-shadow: 0 10px 30px rgba(2,6,23,0.6);}
+
+/* layout */
+.grid{display:grid;grid-template-columns:300px 1fr;gap:18px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.nav button{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:transparent;color:var(--muted);border:0;width:100%;text-align:left}
+.nav button.active{background:linear-gradient(90deg, rgba(96,165,250,0.12), rgba(96,165,250,0.06));color:var(--accent);box-shadow: inset 0 0 0 1px rgba(96,165,250,0.06)}
+.nav svg{width:18px;height:18px;opacity:0.9}
+
+/* main content */
+.main{min-height:520px}
+.section{display:none}
+.section.active{display:block}
+.h2{font-size:1.05rem;margin:0 0 8px 0;color:#dff1ff}
+.small{font-size:.9rem;color:var(--muted);margin-bottom:8px}
+.form-row{display:flex;gap:8px}
+.form-row > *{flex:1}
+label{display:block;font-weight:600;margin-top:8px;color:#dbeafe}
+input,textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;outline:none}
+textarea{min-height:80px;resize:vertical}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#3b82f6);color:#04263b;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-weight:600}
+.output{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:12px;margin-top:12px;font-family:var(--mono);font-size:.95rem;color:#dff1ff;white-space:pre-wrap;min-height:84px;}
+
+/* responsive util */
+.row{display:flex;gap:10px}
+.row > *{flex:1}
+
+/* footer */
+.footer{margin-top:18px;color:var(--muted);font-size:.9rem;text-align:center}
+.icon{width:18px;height:18px;display:inline-block;vertical-align:middle}
+
+/* little table */
+.table{width:100%;border-collapse:collapse;margin-top:8px}
+.table td, .table th{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.02);text-align:left;font-size:.95rem;color:var(--muted)}
+.badge{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;color:var(--muted);font-weight:600;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <!-- math icon -->
+        <svg viewBox="0 0 24 24"><path d="M3 6h2v2H3V6zm0 4h2v8H3v-8zm4-4h2v2H7V6zm0 4h2v8H7v-8zm4-4h8v2h-8V6zm0 4h8v8h-8v-8z"/></svg>
+      </div>
+      <div class="title">
+        <h1>Calculadora Profesional — Métodos Numéricos</h1>
+        <p>Integrantes: Martinez Alvarez Angel Enrique · Guardado Vazquez Javier Alejandro · Sanchez Rojas Oralia Alejandra</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="badge">Producto Integrador — Tercer Parcial</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <aside class="card nav">
+      <button class="tab-btn active" data-target="home"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Inicio</button>
+      <button class="tab-btn" data-target="roots"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 7v6c0 5 4 9 10 9s10-4 10-9V7l-10-5z"/></svg> Métodos de Raíces</button>
+      <button class="tab-btn" data-target="matrices"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/></svg> Matrices</button>
+      <button class="tab-btn" data-target="interpol"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h2v6H3v-6zm4-8h2v14H7V5zm4 8h2v6h-2v-6zm4-10h2v16h-2V3z"/></svg> Interpolación</button>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
+      <div class="small">Instrucciones rápidas</div>
+      <div class="small" style="margin-top:8px">Funciones: usa sintaxis JS (x variable), ej.: <code>Math.cos(x)-x</code>. Matrices: columnas separadas por comas, filas por nueva línea.</div>
+    </aside>
+
+    <main class="card main">
+      <section id="home" class="section active">
+        <h2 class="h2">Bienvenido</h2>
+        <p class="small">Página profesional y responsive para realizar las prácticas de métodos numéricos. Incluye: métodos de raíces (Bisección, Secante, Newton), operaciones con matrices (2x2/3x3), y interpolación (Lagrange, Newton).</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card" style="padding:12px">
+            <strong>Entrega</strong>
+            <p class="small">Guarda este archivo .html y súbelo o adjúntalo con tu informe. Compatible con móviles.</p>
+          </div>
+          <div class="card" style="padding:12px">
+            <strong>Sintaxis</strong>
+            <p class="small">Funciones en JavaScript. Potencias con <code>**</code>. Decimales con punto <code>.</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROOTS -->
+      <section id="roots" class="section">
+        <h2 class="h2">Métodos de Raíces</h2>
+        <p class="small">Ingrese la función en JS (ej: <code>x**3-2*x-5</code>). La derivada en Newton se aproxima numéricamente.</p>
+
+        <label>Función f(x)</label>
+        <input id="funcExpr" value="x**3-2*x-5" />
+
+        <div class="form-row">
+          <div>
+            <label>Método</label>
+            <select id="rootMethod">
+              <option value="bisection">Bisección</option>
+              <option value="secant">Secante</option>
+              <option value="newton">Newton-Raphson</option>
+            </select>
+          </div>
+          <div>
+            <label>Tolerancia</label>
+            <input id="tol" value="1e-6" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>a (o x0)</label>
+            <input id="a" value="1" />
+          </div>
+          <div>
+            <label>b (o x1)</label>
+            <input id="b" value="3" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <button class="btn" id="runRoots"><svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l4 8h-8l4-8zM6 10h12l-1 10H7L6 10z"/></svg> Calcular</button>
+          <button class="btn ghost" id="clearRoots">Limpiar</button>
+        </div>
+
+        <div id="rootsOut" class="output" aria-live="polite"></div>
+      </section>
+
+      <!-- MATRICES -->
+      <section id="matrices" class="section">
+        <h2 class="h2">Operaciones con Matrices</h2>
+        <p class="small">Introduce matrices con columnas separadas por comas y filas en líneas nuevas. Soporta operaciones básicas, determinante 2x2/3x3 e inversa.</p>
+
+        <label>Matriz A</label>
+        <textarea id="matA">1,2
+3,4</textarea>
+
+        <label>Matriz B <span class="small">(opcional para algunas operaciones)</span></label>
+        <textarea id="matB">5,6
+7,8</textarea>
+
+        <label>Operación</label>
+        <select id="matOp">
+          <option value="add">Suma A + B</option>
+          <option value="sub">Resta A - B</option>
+          <option value="mul">Multiplicación A × B</option>
+          <option value="detA">Determinante A</option>
+          <option value="invA">Inversa A</option>
+        </select>
+
+        <div style="margin-top:10px">
+          <button class="btn" id="runMat"><svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/></svg> Ejecutar</button>
+          <button class="btn ghost" id="clearMat">Limpiar</button>
+        </div>
+
+        <div id="matOut" class="output"></div>
+      </section>
+
+      <!-- INTERPOLATION -->
+      <section id="interpol" class="section">
+        <h2 class="h2">Interpolación</h2>
+        <p class="small">Puntos como <code>x,y</code> por línea. El sistema limpia caracteres invisibles automáticamente.</p>
+
+        <label>Puntos</label>
+        <textarea id="points">0,1
+1,2
+2,5</textarea>
+
+        <div class="form-row">
+          <div>
+            <label>Método</label>
+            <select id="interpMethod"><option value="lagrange">Lagrange</option><option value="newton">Newton</option></select>
+          </div>
+          <div>
+            <label>Evaluar en x =</label>
+            <input id="evalX" value="1.5" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <button class="btn" id="runInterp"><svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h2v6H3v-6zm4-8h2v14H7V5zm4 8h2v6h-2v-6zm4-10h2v16h-2V3z"/></svg> Interpolar</button>
+          <button class="btn ghost" id="clearInterp">Limpiar</button>
+        </div>
+
+        <div id="interpOut" class="output"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="footer card" style="margin-top:16px">
+    <div>Archivo HTML optimizado • Responsive • Hecho para entrega académica</div>
+  </footer>
+
+</div>
+
+<script>
+
+  /* Utility: normalize input and remove invisible characters */
+function normalizeText(s){
+  if (s === null || s === undefined) return '';
+  s = String(s);
+
+  // Remove BOM and zero-width / directional marks
+  s = s.replace(/\uFEFF/g, '')
+       .replace(/\u200B/g, '')   // zero-width space
+       .replace(/\u200E/g, '')   // left-to-right mark
+       .replace(/\u200F/g, '')   // right-to-left mark
+       .replace(/\u00A0/g, ' '); // non-breaking space -> normal space
+
+  // Normalize newlines: CRLF and CR => LF
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // Convert visible backslash-n sequences (literally "\n") into real newlines
+  s = s.replace(/\\n/g, '\n');
+
+  // Normalize fancy quotes to regular quotes
+  s = s.replace(/[“”‘’]/g, '"');
+
+  // Remove control characters except: tab (\x09) and newline (\x0A)
+  s = s.replace(/[^\x09\x0A\x20-\x7E\u00A0-\uFFFF]/g, '');
+
+  // Accept semicolon as row separator (useful for some copy formats)
+  s = s.replace(/;/g, '\n');
+
+  // Convert comma decimals like "3,14" to "3.14" when between digits
+  s = s.replace(/(\d),(\d)/g, '$1.$2');
+
+  // Collapse multiple blank lines and trim
+  s = s.replace(/\n{2,}/g, '\n').trim();
+
+  return s;
+}
+
+
+/* Simpler robust cleaners used below */
+function cleanPrintable(s){
+  if(!s && s !== '') return '';
+  s = String(s);
+  // convert common problematic sequences
+  s = s.replace(/\uFEFF/g,'');
+  s = s.replace(/\r/g,'\n');
+  s = s.replace(/\\n/g,'\n');
+  // remove zero-width spaces and non-printing
+  s = s.replace(/\u200B/g,'').replace(/\u200E/g,'').replace(/\u200F/g,'');
+  // replace fancy commas in number contexts
+  s = s.replace(/(\d),(\d)/g,'$1.$2');
+  // remove other odd control chars
+  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+  return s.trim();
+}
+
+/* --- Tabs --- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(btn.dataset.target).classList.add('active');
+  });
+});
+
+/* --- Function parser --- */
+function parseFunc(expr){
+  expr = String(expr||'').trim();
+  expr = expr.replace(/[“”‘’]/g,'"');
+  if(!expr) throw new Error('Función vacía');
+  try{
+    // safe wrapper
+    return new Function('x','with(Math){ return '+expr+' }');
+  }catch(e){
+    throw new Error('Expresión inválida. Usa sintaxis JavaScript, ejemplo: x**3 - 2*x - 5');
+  }
+}
+
+/* --- Roots methods --- */
+document.getElementById('runRoots').addEventListener('click', ()=>{
+  const out = document.getElementById('rootsOut'); out.textContent=''; try{
+    const raw = document.getElementById('funcExpr').value;
+    const f = parseFunc(raw);
+    const method = document.getElementById('rootMethod').value;
+    const tol = Number(document.getElementById('tol').value) || 1e-6;
+    let a = Number(document.getElementById('a').value);
+    let b = Number(document.getElementById('b').value);
+    const maxIter = 100;
+    if(method==='bisection'){
+      let fa = f(a), fb = f(b);
+      if(isNaN(fa) || isNaN(fb)) { out.textContent='f(a) o f(b) no es numérico. Revisa la función.'; return; }
+      if(fa*fb>0){ out.textContent='f(a) y f(b) deben tener signos opuestos.'; return; }
+      let txt='Iter\ta\tb\tmid\tf(mid)\terror%\n'; let prev=null, mid=NaN;
+      for(let i=1;i<=maxIter;i++){
+        mid=(a+b)/2; const fmid=f(mid);
+        const err = prev===null?0:Math.abs((mid-prev)/mid)*100;
+        txt+=`${i}\t${a.toFixed(6)}\t${b.toFixed(6)}\t${mid.toFixed(6)}\t${(typeof fmid==='number'?fmid.toExponential(3):String(fmid))}\t${err.toFixed(6)}\n`;
+        if(Math.abs(fmid)<=tol || err<=tol) break;
+        if(fa*fmid<0){ b=mid; fb=fmid } else { a=mid; fa=fmid }
+        prev=mid;
+      }
+      txt += '\nResultado aproximado: '+mid;
+      out.textContent = txt;
+    } else if(method==='secant'){
+      let x0 = a, x1 = b, fx0=f(x0), fx1=f(x1); let txt='Iter\tx0\tx1\tx2\tf(x2)\terror%\n';
+      for(let i=1;i<=maxIter;i++){
+        if(fx1===fx0){ txt += 'División por cero (fx1==fx0).'; break; }
+        const x2 = x1 - fx1*(x1-x0)/(fx1-fx0); const f_x2 = f(x2);
+        const err = Math.abs((x2-x1)/(x2===0?1:x2))*100;
+        txt+=`${i}\t${x0.toFixed(6)}\t${x1.toFixed(6)}\t${x2.toFixed(6)}\t${(typeof f_x2==='number'?f_x2.toExponential(3):String(f_x2))}\t${err.toFixed(6)}\n`;
+        if(err<=tol){ x1=x2; break;}
+        x0=x1; fx0=fx1; x1=x2; fx1=f(x1);
+      }
+      out.textContent = txt + '\nResultado aproximado: ' + x1;
+    } else if(method==='newton'){
+      let x = a || 1; let txt='Iter\tx\tf(x)\terror%\n';
+      for(let i=1;i<=maxIter;i++){
+        const fx = f(x);
+        const h = 1e-8; const d = (f(x+h)-f(x-h))/(2*h);
+        if(!isFinite(d) || d===0){ txt += 'Derivada cero o no finita. Interrumpido.'; break; }
+        const xnew = x - fx/d; const err = Math.abs((xnew-x)/(xnew===0?1:xnew))*100;
+        txt += `${i}\t${x.toFixed(8)}\t${(typeof fx==='number'?fx.toExponential(3):String(fx))}\t${err.toFixed(6)}\n`;
+        x = xnew; if(err<=tol) break;
+      }
+      out.textContent = txt + '\nResultado aproximado: ' + x;
+    }
+  }catch(e){ document.getElementById('rootsOut').textContent='Error: '+(e.message||e); }
+});
+
+/* --- Matrices utilities --- */
+function parseMatrix(str){
+  str = cleanPrintable(str||'');
+  str = str.replace(/\\n/g,'\n').replace(/;/g,'\n');
+  const rows = str.split('\n').map(r=>r.trim()).filter(r=>r.length);
+  const m = rows.map(r=>r.split(',').map(s=>{ s=s.trim(); s=s.replace(/,(?=\d)/g,'.'); const n=Number(s); if(isNaN(n)) throw new Error('Valor no numérico en matriz: '+s); return n;}));
+  const cols = m[0].length; if(!m.every(row=>row.length===cols)) throw new Error('Filas con distinto número de columnas.');
+  return m;
+}
+function matToStr(m){ return m.map(r=>r.map(v=>Number.isFinite(v)?(Math.round(v*1e8)/1e8):v).join('\t')).join('\n'); }
+function addMat(a,b){ return a.map((r,i)=>r.map((c,j)=>c + b[i][j])); }
+function subMat(a,b){ return a.map((r,i)=>r.map((c,j)=>c - b[i][j])); }
+function mulMat(a,b){ const n=a.length,m=b[0].length,p=a[0].length; let C=Array.from({length:n},()=>Array(m).fill(0)); for(let i=0;i<n;i++)for(let j=0;j<m;j++)for(let k=0;k<p;k++)C[i][j]+=a[i][k]*b[k][j]; return C; }
+function det2(m){ return m[0][0]*m[1][1]-m[0][1]*m[1][0]; }
+function det3(m){ return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]); }
+function inverse2(m){ const d=det2(m); if(d===0) throw new Error('Determinante 0'); return [[m[1][1]/d,-m[0][1]/d],[-m[1][0]/d,m[0][0]/d]]; }
+function inverse3(m){ const n=3; let A=m.map(r=>r.slice()), I=Array.from({length:n},(_,i)=>Array.from({length:n},(__,j)=>i===j?1:0)); for(let i=0;i<n;i++){ let piv=i; for(let r=i;r<n;r++) if(Math.abs(A[r][i])>Math.abs(A[piv][i])) piv=r; if(Math.abs(A[piv][i])<1e-12) throw new Error('Matriz singular'); [A[i],A[piv]]=[A[piv],A[i]]; [I[i],I[piv]]=[I[piv],I[i]]; const div=A[i][i]; for(let j=0;j<n;j++){A[i][j]/=div; I[i][j]/=div} for(let r=0;r<n;r++) if(r!==i){const fac=A[r][i]; for(let c=0;c<n;c++){A[r][c]-=fac*A[i][c]; I[r][c]-=fac*I[i][c]}} } return I; }
+
+document.getElementById('runMat').addEventListener('click', ()=>{
+  const out = document.getElementById('matOut'); out.textContent=''; try{
+    const op = document.getElementById('matOp').value;
+    const A = parseMatrix(document.getElementById('matA').value);
+    if(op==='detA'){ if(A.length===2 && A[0].length===2) out.textContent='Determinante A: '+det2(A); else if(A.length===3 && A[0].length===3) out.textContent='Determinante A: '+det3(A); else throw new Error('Solo 2x2 o 3x3 para determinante.'); return; }
+    if(op==='invA'){ if(A.length===2 && A[0].length===2) out.textContent='Inversa A:\n'+matToStr(inverse2(A)); else if(A.length===3 && A[0].length===3) out.textContent='Inversa A:\n'+matToStr(inverse3(A)); else throw new Error('Solo 2x2 o 3x3 para inversa.'); return; }
+    const B = parseMatrix(document.getElementById('matB').value);
+    if(op==='add'){ if(A.length!==B.length||A[0].length!==B[0].length) throw new Error('Dimensiones deben coincidir para suma.'); out.textContent='A + B:\n'+matToStr(addMat(A,B)); return; }
+    if(op==='sub'){ if(A.length!==B.length||A[0].length!==B[0].length) throw new Error('Dimensiones deben coincidir para resta.'); out.textContent='A - B:\n'+matToStr(subMat(A,B)); return; }
+    if(op==='mul'){ if(A[0].length!==B.length) throw new Error('Columnas de A deben igualar filas de B.'); out.textContent='A × B:\n'+matToStr(mulMat(A,B)); return; }
+  }catch(e){ document.getElementById('matOut').textContent='Error: '+(e.message||e); }
+});
+
+/* --- Interpolation --- */
+function cleanPrintable(s){
+  if(!s && s !== '') return '';
+  s = String(s);
+  s = s.replace(/\uFEFF/g,'').replace(/\u200B/g,'').replace(/\u200E/g,'').replace(/\u200F/g,'');
+  s = s.replace(/\r/g,'\n').replace(/\\n/g,'\n');
+  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+  s = s.replace(/(\d),(\d)/g,'$1.$2');
+  return s.trim();
+}
+
+function parsePoints(str){
+  str = cleanPrintable(str||'');
+  str = str.replace(/;/g,'\n');
+  const lines = str.split('\n').map(l=>l.trim()).filter(l=>l.length);
+  if(lines.length===0) throw new Error('No hay puntos.');
+  return lines.map(line=>{
+    const parts = line.split(',').map(p=>p.trim());
+    if(parts.length!==2) throw new Error('Cada línea debe ser "x,y". Línea problemática: ' + line);
+    const x = Number(parts[0].replace(/\s+/g,''));
+    const y = Number(parts[1].replace(/\s+/g,''));
+    if(isNaN(x) || isNaN(y)) throw new Error('Valor numérico inválido en: ' + line);
+    return [x,y];
+  });
+}
+
+function lagrange(points,x){
+  let result=0; const n=points.length;
+  for(let i=0;i<n;i++){ let xi=points[i][0], yi=points[i][1], Li=1;
+    for(let j=0;j<n;j++) if(i!==j) Li *= (x-points[j][0])/(xi-points[j][0]);
+    result += yi*Li;
+  }
+  return result;
+}
+
+function dividedDifferences(points){
+  const n=points.length; const table=Array.from({length:n},()=>Array(n).fill(0));
+  for(let i=0;i<n;i++) table[i][0]=points[i][1];
+  for(let j=1;j<n;j++) for(let i=0;i<n-j;i++) table[i][j]=(table[i+1][j-1]-table[i][j-1])/(points[i+j][0]-points[i][0]);
+  return table;
+}
+
+function newtonEval(points,x){
+  const dd = dividedDifferences(points); let result=0;
+  for(let i=0;i<points.length;i++){ let term=dd[0][i]; for(let j=0;j<i;j++) term *= (x-points[j][0]); result+=term; }
+  return {value: result, table: dd};
+}
+
+document.getElementById('runInterp').addEventListener('click', ()=>{
+  const out = document.getElementById('interpOut'); out.textContent=''; try{
+    const pts = parsePoints(document.getElementById('points').value);
+    const method = document.getElementById('interpMethod').value;
+    const x = Number(document.getElementById('evalX').value);
+    if(isNaN(x)) throw new Error('Valor x inválido');
+    if(method==='lagrange'){ out.textContent = 'Lagrange en x='+x+': '+ lagrange(pts,x); }
+    else { const r = newtonEval(pts,x); out.textContent = 'Newton en x='+x+': '+ r.value + '\n\nTabla de diferencias:\n' + JSON.stringify(r.table); }
+  }catch(e){ out.textContent = 'Error: ' + (e.message || e); }
+});
+
+/* Clear buttons */
+document.getElementById('clearRoots').addEventListener('click', ()=>{ document.getElementById('funcExpr').value=''; document.getElementById('a').value=''; document.getElementById('b').value=''; document.getElementById('rootsOut').textContent=''; });
+document.getElementById('clearMat').addEventListener('click', ()=>{ document.getElementById('matA').value=''; document.getElementById('matB').value=''; document.getElementById('matOut').textContent=''; });
+document.getElementById('clearInterp').addEventListener('click', ()=>{ document.getElementById('points').value=''; document.getElementById('interpOut').textContent=''; });
+
+</script>
+</body>
+</html>
