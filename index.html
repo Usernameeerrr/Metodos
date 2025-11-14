@@ -258,21 +258,7 @@ function normalizeText(s){
 
 
 /* Simpler robust cleaners used below */
-function cleanPrintable(s){
-  if(!s && s !== '') return '';
-  s = String(s);
-  // convert common problematic sequences
-  s = s.replace(/\uFEFF/g,'');
-  s = s.replace(/\r/g,'\n');
-  s = s.replace(/\\n/g,'\n');
-  // remove zero-width spaces and non-printing
-  s = s.replace(/\u200B/g,'').replace(/\u200E/g,'').replace(/\u200F/g,'');
-  // replace fancy commas in number contexts
-  s = s.replace(/(\d),(\d)/g,'$1.$2');
-  // remove other odd control chars
-  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
-  return s.trim();
-}
+
 
 /* --- Tabs --- */
 document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -391,8 +377,17 @@ function cleanPrintable(s){
 }
 
 function parsePoints(str){
-  str = cleanPrintable(str||'');
-  str = str.replace(/;/g,'\n');
+  // Limpieza básica sin tocar comas (para NO romper x,y)
+  str = String(str || '')
+    .replace(/\uFEFF/g,'')
+    .replace(/\u200B/g,'')
+    .replace(/\u200E/g,'')
+    .replace(/\u200F/g,'')
+    .replace(/\r/g,'\n')
+    .replace(/\\n/g,'\n')
+    .trim();
+
+  // Separar líneas válidas
   const lines = str.split('\n').map(l=>l.trim()).filter(l=>l.length);
   if(lines.length===0) throw new Error('No hay puntos.');
   return lines.map(line=>{
