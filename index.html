@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora Métodos Numéricos — FIX</title>
+  <style>
+    :root{--accent:#2b6cb0;--bg:#f7fbff}
+    body{font-family:Arial,system-ui;padding:18px;margin:0;background:var(--bg);color:#0b2545}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    h1{margin:.2rem 0}
+    .authors{font-size:.95rem;color:#114;opacity:.85}
+    .container{display:grid;grid-template-columns:330px 1fr;gap:18px;margin-top:14px}
+    @media (max-width:880px){.container{grid-template-columns:1fr}}
+    nav{background:white;border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(11,37,69,.06)}
+    nav button{display:block;width:100%;padding:10px;margin:6px 0;border:0;border-radius:8px;background:transparent;text-align:left}
+    nav button.active{background:linear-gradient(90deg,var(--accent),#5aa7e6);color:white}
+    main{background:white;border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(11,37,69,.06)}
+    .section{display:none}
+    .section.active{display:block}
+    label{display:block;margin-top:8px;font-weight:600}
+    input,textarea,select{width:100%;padding:8px;border-radius:6px;border:1px solid #d2e3f8;margin-top:6px}
+    .row{display:flex;gap:10px}
+    .row > *{flex:1}
+    .output{background:#f3f7fb;border-radius:8px;padding:10px;margin-top:10px;white-space:pre-wrap;font-family:monospace}
+    .small{font-size:.9rem;color:#234;opacity:.9}
+    .btn{display:inline-block;padding:8px 12px;border-radius:8px;border:0;background:var(--accent);color:white;margin-top:10px}
+    .muted{font-size:.9rem;color:#376;opacity:.6}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Calculadora Digital — Métodos Numéricos (FIX)</h1>
+      <div class="authors">Integrantes: Martinez Alvarez Angel Enrique · Guardado Vazquez Javier Alejandro · Sanchez Rojas Oralia Alejandra</div>
+    </div>
+    <div class="muted">Proyecto: Producto Integrador — Tercer Parcial</div>
+  </header>
+
+  <div class="container">
+    <nav>
+      <button class="tab-btn active" data-target="home">Inicio / Instrucciones</button>
+      <button class="tab-btn" data-target="roots">Métodos de Raíces</button>
+      <button class="tab-btn" data-target="matrices">Matrices</button>
+      <button class="tab-btn" data-target="interpol">Interpolación</button>
+    </nav>
+
+    <main>
+      <section id="home" class="section active">
+        <h2>Instrucciones</h2>
+        <p class="small">Usa sintaxis JavaScript para funciones (variable: <code>x</code>). Usa punto decimal <code>3.14</code>, potencia con <code>**</code>.</p>
+        <ul>
+          <li>Función: ej. <code>Math.cos(x)-x</code> o <code>x**3-2*x-5</code>.</li>
+          <li>Matrices: columnas separadas por comas y filas en líneas nuevas.</li>
+          <li>Puntos: cada línea <code>x,y</code>.</li>
+        </ul>
+      </section>
+
+      <section id="roots" class="section">
+        <h2>Método de Raíces</h2>
+        <label>f(x) (JS): <input id="funcExpr" value="x**3-2*x-5" /></label>
+        <div class="row">
+          <div><label>Método</label><select id="rootMethod"><option value="bisection">Bisección</option><option value="secant">Secante</option><option value="newton">Newton-Raphson</option></select></div>
+          <div><label>Tolerancia</label><input id="tol" value="1e-6" /></div>
+        </div>
+        <div class="row">
+          <div><label>a / x0</label><input id="a" value="1" /></div>
+          <div><label>b / x1</label><input id="b" value="3" /></div>
+        </div>
+        <button class="btn" id="runRoots">Calcular</button>
+        <div id="rootsOut" class="output"></div>
+      </section>
+
+      <section id="matrices" class="section">
+        <h2>Matrices</h2>
+        <label>Matriz A<textarea id="matA" rows="4">1,2
+3,4</textarea></label>
+        <label>Matriz B<textarea id="matB" rows="4">5,6
+7,8</textarea></label>
+        <label>Operación
+          <select id="matOp"><option value="add">Suma</option><option value="sub">Resta</option><option value="mul">Multiplicación</option><option value="detA">Determinante A</option><option value="invA">Inversa A</option></select>
+        </label>
+        <button class="btn" id="runMat">Ejecutar</button>
+        <div id="matOut" class="output"></div>
+      </section>
+
+      <section id="interpol" class="section">
+        <h2>Interpolación</h2>
+        <label>Puntos<textarea id="points" rows="5">0,1
+1,2
+2,5</textarea></label>
+        <div class="row">
+          <div><label>Método</label><select id="interpMethod"><option value="lagrange">Lagrange</option><option value="newton">Newton</option></select></div>
+          <div><label>Evaluar en x=</label><input id="evalX" value="1.5" /></div>
+        </div>
+        <button class="btn" id="runInterp">Interpolar</button>
+        <div id="interpOut" class="output"></div>
+      </section>
+    </main>
+  </div>
+
+<script>
+/* --- Helpers robustos --- */
+// Replace literal "\n" sequences with real newlines and convert decimal commas to dots inside numeric contexts
+function normalizeInputText(s){
+  if(!s) return s;
+  // replace literal backslash-n sequences with actual newlines
+  s = s.replace(/\\n/g, '\n');
+  // normalize fancy quotes to normal quotes
+  s = s.replace(/[“”‘’]/g, '"');
+  // convert numbers with comma decimal like 3,14 to 3.14 (only if comma between digits)
+  s = s.replace(/(\d),(\d)/g, '$1.$2');
+  return s.trim();
+}
+
+function parseFunc(expr){
+  expr = (expr||'').trim();
+  expr = expr.replace(/[“”‘’]/g,'"');
+  if(expr.length===0) throw new Error('Función vacía');
+  try{
+    return new Function('x','with(Math){ return '+expr+' }');
+  }catch(e){
+    console.error('Error creando función con expression:', expr, e);
+    throw new Error('Expresión inválida para la función. Revisa la sintaxis JS (usa x, Math.sin, ** para potencias).');
+  }
+}
+
+function pctError(newv,oldv){ return Math.abs((newv-oldv)/(newv===0?1:newv))*100; }
+
+/* --- Tabs UI --- */
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(btn.dataset.target).classList.add('active');
+}));
+
+/* --- Roots --- */
+document.getElementById('runRoots').addEventListener('click',()=>{
+  const out = document.getElementById('rootsOut'); out.textContent='';
+  const raw = document.getElementById('funcExpr').value || '';
+  let f;
+  try{ f = parseFunc(raw); } catch(e){ out.textContent = 'Error: '+e.message; return; }
+  const method = document.getElementById('rootMethod').value;
+  const tol = Number(document.getElementById('tol').value) || 1e-6;
+  const a0 = Number(document.getElementById('a').value);
+  const b0 = Number(document.getElementById('b').value);
+  const maxIter = 100;
+  try{
+    if(method==='bisection'){
+      let a=a0,b=b0,fa=f(a),fb=f(b);
+      if(isNaN(fa) || isNaN(fb)) { out.textContent='f(a) o f(b) no es numérico. Revisa la función.'; return; }
+      if(fa*fb>0){ out.textContent='f(a) y f(b) deben tener signos opuestos.'; return; }
+      let txt='Iter\ta\tb\tmid\tf(mid)\terror%\n'; let prev=null, mid=NaN;
+      for(let i=1;i<=maxIter;i++){
+        mid=(a+b)/2; const fmid=f(mid);
+        const err = prev===null?0:Math.abs((mid-prev)/mid)*100;
+        txt+=`${i}\t${a.toFixed(6)}\t${b.toFixed(6)}\t${mid.toFixed(6)}\t${fmid.toExponential?fmid.toExponential(3):fmid}\t${err.toFixed(6)}\n`;
+        if(Math.abs(fmid)<=tol || err<=tol) break;
+        if(fa*fmid<0){ b=mid; fb=fmid } else { a=mid; fa=fmid }
+        prev=mid;
+      }
+      txt+='\nResultado aproximado: '+mid;
+      out.textContent = txt;
+    } else if(method==='secant'){
+      let x0=a0,x1=b0,fx0=f(x0),fx1=f(x1); let txt='Iter\tx0\tx1\tx2\tf(x2)\terror%\n';
+      for(let i=1;i<=maxIter;i++){
+        if(fx1===fx0){ txt+='División por cero (fx1==fx0).'; break; }
+        const x2 = x1 - fx1*(x1-x0)/(fx1-fx0);
+        const f_x2 = f(x2);
+        const err = Math.abs((x2-x1)/ (x2===0?1:x2))*100;
+        txt+=`${i}\t${x0.toFixed(6)}\t${x1.toFixed(6)}\t${x2.toFixed(6)}\t${f_x2.toExponential?f_x2.toExponential(3):f_x2}\t${err.toFixed(6)}\n`;
+        if(err<=tol){ x1=x2; break; }
+        x0=x1; fx0=fx1; x1=x2; fx1=f(x1);
+      }
+      out.textContent = txt + '\nResultado aproximado: ' + x1;
+    } else if(method==='newton'){
+      let x = (a0||1); let txt='Iter\tx\tf(x)\terror%\n';
+      for(let i=1;i<=maxIter;i++){
+        const fx = f(x);
+        const h = 1e-8; const d = (f(x+h)-f(x-h))/(2*h);
+        if(!isFinite(d) || d===0){ txt += 'Derivada cero o no finita. Interrumpido.'; break; }
+        const xnew = x - fx/d; const err = Math.abs((xnew-x)/(xnew===0?1:xnew))*100;
+        txt += `${i}\t${x.toFixed(8)}\t${fx.toExponential?fx.toExponential(3):fx}\t${err.toFixed(6)}\n`;
+        x = xnew; if(err<=tol) break;
+      }
+      out.textContent = txt + '\nResultado aproximado: ' + x;
+    }
+  }catch(e){ console.error(e); out.textContent = 'Error en cálculo: ' + (e.message || e); }
+});
+
+/* --- Matrices --- */
+function parseMatrix(str){
+  str = normalizeInputText(str);
+  // accept semicolon as row separator too
+  str = str.replace(/;/g, '\n');
+  const rows = str.split('\n').map(r=>r.trim()).filter(r=>r.length);
+  const m = rows.map(r => r.split(',').map(s => {
+    s = s.trim().replace(',', '.'); // just in case
+    const n = Number(s);
+    if(isNaN(n)) throw new Error('Valor numérico inválido en matriz: "'+s+'"');
+    return n;
+  }));
+  const cols = m[0].length; if(!m.every(row => row.length===cols)) throw new Error('Matriz mal formateada: filas con distinto número de columnas.');
+  return m;
+}
+function matToStr(m){ return m.map(r=>r.map(v=>Number.isFinite(v)?(Math.round(v*1e6)/1e6):v).join('\t')).join('\n'); }
+function addMat(a,b){ return a.map((r,i)=>r.map((c,j)=>c + b[i][j])); }
+function subMat(a,b){ return a.map((r,i)=>r.map((c,j)=>c - b[i][j])); }
+function mulMat(a,b){ const n=a.length,m=b[0].length,p=a[0].length; let C=Array.from({length:n},()=>Array(m).fill(0)); for(let i=0;i<n;i++)for(let j=0;j<m;j++)for(let k=0;k<p;k++)C[i][j]+=a[i][k]*b[k][j]; return C; }
+function det2(m){ return m[0][0]*m[1][1]-m[0][1]*m[1][0]; }
+function det3(m){ return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]); }
+function inverse2(m){ const d=det2(m); if(d===0) throw new Error('Determinante 0'); return [[m[1][1]/d,-m[0][1]/d],[-m[1][0]/d,m[0][0]/d]]; }
+function inverse3(m){ const n=3; let A=m.map(r=>r.slice()), I=Array.from({length:n},(_,i)=>Array.from({length:n},(__,j)=>i===j?1:0)); for(let i=0;i<n;i++){ let piv=i; for(let r=i;r<n;r++) if(Math.abs(A[r][i])>Math.abs(A[piv][i])) piv=r; if(Math.abs(A[piv][i])<1e-12) throw new Error('Matriz singular'); [A[i],A[piv]]=[A[piv],A[i]]; [I[i],I[piv]]=[I[piv],I[i]]; const div=A[i][i]; for(let j=0;j<n;j++){A[i][j]/=div; I[i][j]/=div} for(let r=0;r<n;r++) if(r!==i){const fac=A[r][i]; for(let c=0;c<n;c++){A[r][c]-=fac*A[i][c]; I[r][c]-=fac*I[i][c]}} } return I; }
+
+document.getElementById('runMat').addEventListener('click',()=>{
+  const out = document.getElementById('matOut'); out.textContent='';
+  try{
+    const op = document.getElementById('matOp').value;
+    const A = parseMatrix(document.getElementById('matA').value);
+    if(op==='detA'){
+      if(A.length===2 && A[0].length===2) out.textContent = 'Determinante A: '+det2(A);
+      else if(A.length===3 && A[0].length===3) out.textContent = 'Determinante A: '+det3(A);
+      else throw new Error('Solo soportado 2x2 o 3x3 para determinante.');
+    } else if(op==='invA'){
+      if(A.length===2 && A[0].length===2) out.textContent = 'Inversa A:\n'+matToStr(inverse2(A));
+      else if(A.length===3 && A[0].length===3) out.textContent = 'Inversa A:\n'+matToStr(inverse3(A));
+      else throw new Error('Solo soportado 2x2 o 3x3 para inversa.');
+    } else {
+      const B = parseMatrix(document.getElementById('matB').value);
+      if(op==='add'){ if(A.length!==B.length||A[0].length!==B[0].length) throw new Error('Dimensiones deben coincidir para suma.'); out.textContent='Resultado (A+B):\n'+matToStr(addMat(A,B)); }
+      if(op==='sub'){ if(A.length!==B.length||A[0].length!==B[0].length) throw new Error('Dimensiones deben coincidir para resta.'); out.textContent='Resultado (A-B):\n'+matToStr(subMat(A,B)); }
+      if(op==='mul'){ if(A[0].length!==B.length) throw new Error('Columnas de A deben igualar filas de B para multiplicación.'); out.textContent='Resultado (A*B):\n'+matToStr(mulMat(A,B)); }
+    }
+  }catch(e){ console.error(e); out.textContent = 'Error: ' + (e.message || e); }
+});
+
+/* --- Interpolación --- */
+function parsePoints(str){
+  str = normalizeInputText(str).replace(/;/g,'\n');
+  const lines = str.split('\n').map(l=>l.trim()).filter(l=>l.length);
+  return lines.map(l=>{
+    const parts = l.split(',').map(p=>p.trim().replace(',','.'));
+    if(parts.length!==2) throw new Error('Cada línea debe ser "x,y"');
+    const x=Number(parts[0]), y=Number(parts[1]);
+    if(isNaN(x)||isNaN(y)) throw new Error('Valor numérico inválido en puntos: "'+l+'"');
+    return [x,y];
+  });
+}
+function lagrange(points,x){
+  let result=0, n=points.length;
+  for(let i=0;i<n;i++){ let xi=points[i][0], yi=points[i][1], Li=1;
+    for(let j=0;j<n;j++) if(j!==i) Li *= (x-points[j][0])/(xi-points[j][0]);
+    result += yi*Li;
+  }
+  return result;
+}
+function dividedDifferences(points){
+  const n=points.length; const table = Array.from({length:n},()=>Array(n).fill(0));
+  for(let i=0;i<n;i++) table[i][0]=points[i][1];
+  for(let j=1;j<n;j++) for(let i=0;i<n-j;i++) table[i][j] = (table[i+1][j-1]-table[i][j-1])/(points[i+j][0]-points[i][0]);
+  return table;
+}
+function newtonEval(points,x){
+  const dd = dividedDifferences(points);
+  let result=0;
+  for(let i=0;i<points.length;i++){
+    let term = dd[0][i];
+    for(let j=0;j<i;j++) term *= (x-points[j][0]);
+    result += term;
+  }
+  return { value: result, table: dd };
+}
+
+document.getElementById('runInterp').addEventListener('click',()=>{
+  const out = document.getElementById('interpOut'); out.textContent='';
+  try{
+    const points = parsePoints(document.getElementById('points').value);
+    const method = document.getElementById('interpMethod').value;
+    const x = Number(document.getElementById('evalX').value);
+    if(isNaN(x)) throw new Error('x a evaluar no es numérico');
+    if(method==='lagrange'){ const v = lagrange(points,x); out.textContent = 'Lagrange en x='+x+': '+v; }
+    else { const res = newtonEval(points,x); out.textContent = 'Newton en x='+x+': '+res.value + '\nTabla dif. divididas:\n' + JSON.stringify(res.table); }
+  }catch(e){ console.error(e); out.textContent = 'Error: '+(e.message || e); }
+});
+</script>
+</body>
+</html>
